@@ -5,7 +5,7 @@
 # This workflow will build a package using Gradle and then publish it to GitHub packages when a release is created
 # For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#Publishing-using-gradle
 
-name: Cross-platform Gradle Release
+name: Build and Release Artifacts
 
 on:
   release:
@@ -16,9 +16,7 @@ permissions:
 
 jobs:
   build-macos:
-    name: Build macOS (.dmg)
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -31,17 +29,18 @@ jobs:
       - name: Build .dmg
         run: ./gradlew packageDmg
 
-      - name: Upload .dmg to GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Find generated files
+        run: find build -type f
+
+      - name: Upload .dmg to GitHub release
+        uses: softprops/action-gh-release@v1
         with:
           files: build/compose/binaries/main/dmg/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
   build-windows:
-    name: Build Windows (.msi, .exe)
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -52,10 +51,15 @@ jobs:
           distribution: 'temurin'
 
       - name: Build .msi and .exe
-        run: .\gradlew.bat packageMsi packageExe
+        run: |
+          ./gradlew packageMsi
+          ./gradlew packageExe
 
-      - name: Upload .msi and .exe to GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Find generated files
+        run: Get-ChildItem -Recurse build | Format-List FullName
+
+      - name: Upload .msi and .exe to GitHub release
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             build/compose/binaries/main/msi/*.msi
@@ -64,9 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
   build-linux:
-    name: Build Linux (.deb)
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -79,8 +81,11 @@ jobs:
       - name: Build .deb
         run: ./gradlew packageDeb
 
-      - name: Upload .deb to GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Find generated files
+        run: find build -type f
+
+      - name: Upload .deb to GitHub release
+        uses: softprops/action-gh-release@v1
         with:
           files: build/compose/binaries/main/deb/*.deb
         env:
